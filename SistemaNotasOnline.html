@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Notas Online</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .bimestre { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+    input[type=number] { width: 60px; margin: 5px; }
+    .resultado { margin-top: 10px; font-weight: bold; }
+    #mediaFinal { font-size: 1.2em; margin-top: 40px; }
+    button { margin-top: 10px; padding: 8px 15px; }
+  </style>
+</head>
+<body>
+  <h1>Sistema de Notas Online</h1>
+  <div id="container"></div>
+  <div id="mediaFinal"></div>
+
+  <script>
+    const bimestres = 4;
+    const tiposNotas = ["Formativa", "AM", "Nacional", "Qualitativo", "Avaliação Virtual", "Seminário", "Standard Test"];
+    const mediasBimestrais = Array(bimestres).fill(null);
+
+    function criarCampos() {
+      const container = document.getElementById("container");
+      for (let b = 1; b <= bimestres; b++) {
+        const div = document.createElement("div");
+        div.classList.add("bimestre");
+        div.id = `bimestre${b}`;
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = `Bimestre ${b}`;
+        div.appendChild(titulo);
+
+        tiposNotas.forEach(tipo => {
+          const label = document.createElement("label");
+          label.textContent = tipo + ": ";
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = 0;
+          input.max = 10;
+          input.step = 0.1;
+          input.className = "nota";
+          input.dataset.bimestre = b;
+          input.dataset.tipo = tipo;
+          input.oninput = validarNota;
+          div.appendChild(label);
+          div.appendChild(input);
+        });
+
+        const btn = document.createElement("button");
+        btn.textContent = "Calcular Média";
+        btn.onclick = () => calcularMedia(b);
+        div.appendChild(document.createElement("br"));
+        div.appendChild(btn);
+
+        const resultado = document.createElement("div");
+        resultado.className = "resultado";
+        resultado.id = `resultado${b}`;
+        div.appendChild(resultado);
+
+        const inputRecuperacao = document.createElement("input");
+        inputRecuperacao.type = "number";
+        inputRecuperacao.placeholder = "Nota da Recuperação";
+        inputRecuperacao.min = 0;
+        inputRecuperacao.max = 10;
+        inputRecuperacao.step = 0.1;
+        inputRecuperacao.id = `recuperacao${b}`;
+        inputRecuperacao.oninput = () => {
+          validarNota({ target: inputRecuperacao });
+          aplicarRecuperacao(b);
+        };
+        div.appendChild(document.createElement("br"));
+        div.appendChild(inputRecuperacao);
+
+        container.appendChild(div);
+      }
+
+      const btnFinal = document.createElement("button");
+      btnFinal.textContent = "Calcular Média Final do Ano";
+      btnFinal.onclick = calcularMediaFinal;
+      container.appendChild(btnFinal);
+    }
+
+    function validarNota(event) {
+      let val = parseFloat(event.target.value);
+      if (val < 0) event.target.value = 0;
+      if (val > 10) event.target.value = 10;
+    }
+
+    function calcularMedia(bimestre) {
+      const inputs = document.querySelectorAll(`input[data-bimestre="${bimestre}"]`);
+      let soma = 0, count = 0;
+      inputs.forEach(input => {
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+          soma += val;
+          count++;
+        }
+      });
+
+      const media = count > 0 ? (soma / count).toFixed(2) : 0;
+      mediasBimestrais[bimestre - 1] = parseFloat(media);
+      const resultado = document.getElementById(`resultado${bimestre}`);
+
+      if (media >= 6) {
+        resultado.textContent = `Média: ${media} - Aprovado!`;
+        resultado.style.color = "green";
+      } else {
+        const falta = (6 - media).toFixed(2);
+        resultado.textContent = `Média: ${media} - Reprovado. Faltam ${falta} ponto(s).`;
+        resultado.style.color = "red";
+      }
+    }
+
+    function aplicarRecuperacao(bimestre) {
+      const rec = parseFloat(document.getElementById(`recuperacao${bimestre}`).value);
+      if (isNaN(rec)) return;
+
+      mediasBimestrais[bimestre - 1] = rec;
+      const resultado = document.getElementById(`resultado${bimestre}`);
+      const status = rec >= 6 ? "Aprovado na Recuperação!" : "Ainda Reprovado.";
+      resultado.textContent = `Nota da Recuperação: ${rec.toFixed(2)} - ${status}`;
+      resultado.style.color = rec >= 6 ? "green" : "red";
+    }
+
+    function calcularMediaFinal() {
+      let soma = 0, validos = 0;
+      for (let i = 0; i < mediasBimestrais.length; i++) {
+        const val = mediasBimestrais[i];
+        if (!isNaN(val)) {
+          soma += val;
+          validos++;
+        }
+      }
+      const mediaFinal = validos > 0 ? (soma / validos).toFixed(2) : 0;
+      const resultadoFinal = document.getElementById("mediaFinal");
+
+      if (mediaFinal >= 6) {
+        resultadoFinal.innerHTML = `<strong>Média Final:</strong> ${mediaFinal} - <span style="color:green;">Aprovado no Ano!</span>`;
+      } else {
+        const falta = (6 - mediaFinal).toFixed(2);
+        resultadoFinal.innerHTML = `<strong>Média Final:</strong> ${mediaFinal} - <span style="color:red;">Deverá fazer Avaliação Final. Faltam ${falta} ponto(s).</span>`;
+      }
+    }
+
+    criarCampos();
+  </script>
+</body>
+</html>
